@@ -1,13 +1,10 @@
-#[macro_use] extern crate serde_derive;
-
 extern crate regex;
+extern crate datalite;
 
-mod datalite;
-mod datom;
-mod transaction;
+use datalite::Datalite;
 
 fn main() {
-    let mut db = datalite::Datalite::new("example/database");
+    let mut db = Datalite::new("example/database");
 
     db.load().expect("Unable to load previous state from filesystem");
 
@@ -34,9 +31,9 @@ fn main() {
     // );
 
     let james = db.id();
-    db.fact(james, ":person/name", "James Cameron").expect("Unable to insert fact");
+    db.fact(james.as_str(), ":person/name", "James Cameron").expect("Unable to insert fact");
     db.fact("13", ":person/name", "Quentin Tarantino").expect("Unable to insert fact");
-    db.unfact(james, ":person/name").expect("Unable to insert unfact");
+    db.unfact(james.as_str(), ":person/name").expect("Unable to insert unfact");
 
     db.transaction(|block| {
         block.fact("14", ":person/name", "Alfred Hitchcock").expect("Unable to insert fact (tx)");

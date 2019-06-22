@@ -1,7 +1,14 @@
+#[macro_use] extern crate serde_derive;
+
 use std::fs::File;
 use std::io::{BufRead, BufReader, Result};
+use uuid::Uuid;
+
 use crate::datom::Datom;
-use crate::transaction::Transaction;
+use self::transaction::Transaction;
+
+mod datom;
+mod transaction;
 
 pub struct Datalite<'a> {
     filename: &'a str,
@@ -85,8 +92,8 @@ impl<'a> Datalite<'a> {
         Ok(())
     }
 
-    pub fn id(&mut self) -> &'a str {
-        "12"
+    pub fn id(&mut self) -> String {
+        Uuid::new_v4().to_hyphenated().to_string()
     }
 
     pub fn transaction<F>(&mut self, f: F) -> Result<()>
