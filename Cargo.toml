@@ -3,6 +3,8 @@ name = "datalite"
 version = "0.1.0"
 description = "Datalog made easy"
 authors = ["Ferran Basora <fcsonline@gmail.com>"]
+repository = "https://github.com/fcsonline/datalite"
+keywords = ["schemaless", "datalog", "datomic", "timetravel", "realtime"]
 license = "MIT"
 edition = "2018"
 

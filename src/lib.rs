@@ -5,16 +5,20 @@ use std::io::{BufRead, BufReader, Result};
 use uuid::Uuid;
 
 use crate::datom::Datom;
-use self::transaction::Transaction;
+use crate::transaction::Transaction;
+use crate::subscription::Subscription;
+use crate::constraint::Constraint;
 
 mod datom;
 mod transaction;
+mod subscription;
+mod constraint;
 
 pub struct Datalite<'a> {
     filename: &'a str,
     facts: Vec<Box<Datom<'a>>>,
-    subscriptions: Vec<&'a str>, // FIXME: This should be a hash
-    constraints: Vec<&'a str>
+    subscriptions: Vec<Subscription<'a>>,
+    constraints: Vec<Constraint>
 }
 
 impl<'a> Datalite<'a> {
@@ -43,6 +47,12 @@ impl<'a> Datalite<'a> {
         // }).for_each(|datom| {
         //     self.facts.push(Box::new(datom));
         // });
+
+        Ok(())
+    }
+
+    pub fn listen(&mut self, address: &'a str) -> Result<()> {
+        println!("Listening on {}...", address);
 
         Ok(())
     }
@@ -79,15 +89,20 @@ impl<'a> Datalite<'a> {
         Ok(())
     }
 
-    pub fn subscribe<F>(&mut self, value: &'a str, _f: F) -> Result<()>
+    pub fn subscribe<F: 'static>(&mut self, query: String, callback: F) -> Result<()>
     where F: Fn(&Vec<Vec<&'a str>>) {
-        self.subscriptions.push(value);
+        self.subscriptions.push(Subscription {
+            query: query,
+            callback: Box::new(callback)
+        });
 
         Ok(())
     }
 
-    pub fn constraint(&mut self, value: &'a str) -> Result<()> {
-        self.constraints.push(value);
+    pub fn constraint(&mut self, query: String) -> Result<()> {
+        self.constraints.push(Constraint {
+            query: query
+        });
 
         Ok(())
     }

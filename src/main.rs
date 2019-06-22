@@ -30,10 +30,11 @@ fn main() {
     //     ]
     // );
 
-    let james = db.id();
-    db.fact(james.as_str(), ":person/name", "James Cameron").expect("Unable to insert fact");
+    let _james = db.id();
+
+    db.fact("12", ":person/name", "James Cameron").expect("Unable to insert fact");
     db.fact("13", ":person/name", "Quentin Tarantino").expect("Unable to insert fact");
-    db.unfact(james.as_str(), ":person/name").expect("Unable to insert unfact");
+    db.unfact("12", ":person/name").expect("Unable to insert unfact");
 
     db.transaction(|block| {
         block.fact("14", ":person/name", "Alfred Hitchcock").expect("Unable to insert fact (tx)");
@@ -47,13 +48,15 @@ fn main() {
          :where [[p1 :username name]
                  [count(p1) < 1]]}
     "#;
-    db.constraint(constraint).expect("Unable to setup a constraint");
+    db.constraint(constraint.to_string()).expect("Unable to setup a constraint");
 
-    db.subscribe(query, |changes| {
+    db.subscribe(query.to_string(), |changes| {
         println!("{:?}", changes);
     }).expect("Unable to subscribe");
 
     let results = db.query(query);
 
     println!("{:?}", results);
+
+    db.listen("0.0.0.0:18081").expect("Unable to listen");
 }

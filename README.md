@@ -67,6 +67,8 @@ println!("{:?}", results);
 
 ## API
 
+`listen(address: String)`: Start Datalite server in a specific address and port
+
 `query(q: String)`: Retrieve information from the database
 
 `id() -> String`: Generate a new random id for facts
