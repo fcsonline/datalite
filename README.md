@@ -23,6 +23,8 @@ Put this in your Cargo.toml:
 datalite = "0.1.0"
 ```
 
+And then start using it:
+
 ```rust
 let mut db = Datalite::new("example/database");
 
@@ -63,6 +65,26 @@ let results = db.query(query);
 println!("{:?}", results);
 ```
 
+## API
+
+`query(q: String)`: Retrieve information from the database
+
+`id() -> String`: Generate a new random id for facts
+
+`fact(id: String, attr: String, value: String)`: Add new facts to the database for a specific id and attribute
+
+`unfact(id: String, attr: String)`: Remove facts from the database for a specific id and attribute
+
+`transaction`: Execute statements in block
+
+`constraint(q: String)`: Add constraints to the database to avoid data violations
+
+`subscribe(q: String, |changes| {} )`: Subscribe to interesting data changes to be pushed to exernal services
+
 ## Use cases
 
 `TODO`
+
+## Examples
+
+- Datalite integration with a Rocket.rs server: [link](https://github.com/fcsonline/datarocket)
