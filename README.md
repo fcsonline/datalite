@@ -23,6 +23,12 @@ Put this in your Cargo.toml:
 datalite = "0.1.0"
 ```
 
+Enable nightly features:
+
+```
+rustup override set nightly
+```
+
 And then start using it:
 
 ```rust

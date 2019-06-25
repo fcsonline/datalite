@@ -1,7 +1,10 @@
+#![feature(proc_macro_hygiene)]
 #[macro_use] extern crate serde_derive;
+extern crate uuid;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Result};
+
 use uuid::Uuid;
 
 use crate::datom::Datom;
@@ -13,6 +16,8 @@ mod datom;
 mod transaction;
 mod subscription;
 mod constraint;
+mod parser;
+mod executor;
 
 pub struct Datalite<'a> {
     filename: &'a str,
@@ -57,12 +62,11 @@ impl<'a> Datalite<'a> {
         Ok(())
     }
 
-    pub fn query(&self, _value: &'a str) -> Vec<Vec<&'a str>> {
-        self.facts.iter().map(|fact| {
-            vec![
-                fact.id
-            ]
-        }).collect()
+    pub fn query(&self, query: String) -> Vec<Vec<String>> {
+        let lexer = parser::lexer::Lexer::new(&query).inspect(|tok| eprintln!("tok: {:?}", tok));
+        let program: parser::ast::Program = parser::parser::parse(lexer).unwrap();
+
+        executor::query(&self.facts, program.query)
     }
 
     pub fn fact(&mut self, id: &'a str, attr: &'a str, value: &'a str) -> Result<()> {

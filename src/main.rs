@@ -1,5 +1,8 @@
+#![feature(proc_macro_hygiene)]
+
 extern crate regex;
 extern crate datalite;
+extern crate plex;
 
 use datalite::Datalite;
 
@@ -10,11 +13,9 @@ fn main() {
 
     let query = r#"
         [
-          :find ?title
+          :find ?id
           :where
-          [?p :person/name "James Cameron"]
-          [?m :movie/director ?p]
-          [?m :movie/title ?title]
+          [?id :person/name "James Cameron"]
         ]
     "#;
 
@@ -54,7 +55,7 @@ fn main() {
         println!("{:?}", changes);
     }).expect("Unable to subscribe");
 
-    let results = db.query(query);
+    let results = db.query(query.to_string());
 
     println!("{:?}", results);
 
