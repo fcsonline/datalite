@@ -93,6 +93,20 @@ println!("{:?}", results);
 
 `TODO`
 
+## Roadmap
+
+- [X] Implement basic API
+- [X] Implement basic Datalog syntax parser
+- [X] Implement basic query executor
+- [ ] Implement midterm query executor
+- [ ] Implement effecient executor
+- [ ] Implement contraint functionality
+- [ ] Implement subscription functionality
+
 ## Examples
 
 - Datalite integration with a Rocket.rs server: [link](https://github.com/fcsonline/datarocket)
+
+## Ideas
+
+- Use datalite in a browser with wasm
