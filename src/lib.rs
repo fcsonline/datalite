@@ -82,25 +82,15 @@ impl<'a> Datalite<'a> {
     }
 
     pub fn fact(&mut self, id: &'a str, attr: &'a str, value: &'a str) -> Result<()> {
-        let tx = "43223";
-
-        self.conn.execute(
-            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, attr, value, true, tx],
-        )?;
-
-        Ok(())
+        self.transaction(|block| {
+            block.fact(id, attr, value).expect("fact error")
+        })
     }
 
     pub fn unfact(&mut self, id: &'a str, attr: &'a str) -> Result<()> {
-        let tx = "43223";
-
-        self.conn.execute(
-            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![id, attr, "", false, tx],
-        )?;
-
-        Ok(())
+        self.transaction(|block| {
+            block.unfact(id, attr).expect("unfact error")
+        })
     }
 
     pub fn subscribe<F: 'static>(&mut self, query: String, callback: F) -> Result<()>
@@ -132,7 +122,15 @@ impl<'a> Datalite<'a> {
 
         f(&mut block);
 
-        tx.commit().expect("Unable to commit transaction");
+        let success = self.constraints.iter().fold(true, |memo, &constraint| {
+            memo && self.query(constraint.query.clone()).len() == 0
+        });
+
+        if success {
+            tx.commit().expect("Unable to commit transaction");
+        } else {
+            tx.rollback().expect("Unable to rollback transaction");
+        }
 
         Ok(())
     }

@@ -50,7 +50,7 @@ fn main() {
     let constraint = r#"
         {:find [name]
          :where [[p1 :username name]
-                 [count(p1) < 1]]}
+                 [count(p1) > 1]]}
     "#;
     db.constraint(constraint.to_string()).expect("Unable to setup a constraint");
 
