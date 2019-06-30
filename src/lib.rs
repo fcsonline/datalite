@@ -1,13 +1,15 @@
 #![feature(proc_macro_hygiene)]
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate rusqlite;
+
 extern crate uuid;
 
-use std::fs::File;
-use std::io::{BufRead, BufReader, Result};
-
+use rusqlite::{Connection, Result};
 use uuid::Uuid;
 
-use crate::datom::Datom;
 use crate::transaction::Transaction;
 use crate::subscription::Subscription;
 use crate::constraint::Constraint;
@@ -18,40 +20,50 @@ mod subscription;
 mod constraint;
 mod parser;
 mod executor;
+mod builder;
 
 pub struct Datalite<'a> {
-    filename: &'a str,
-    facts: Vec<Box<Datom<'a>>>,
+    conn: Connection,
     subscriptions: Vec<Subscription<'a>>,
     constraints: Vec<Constraint>
 }
 
 impl<'a> Datalite<'a> {
-    pub fn new (filename: &'a str) -> Datalite {
+    pub fn new (path: &'a str) -> Datalite {
+        let conn = Connection::open(&path).expect("Unable to open database");
+
         Datalite {
-            filename: filename,
-            facts: vec![],
+            conn: conn,
             subscriptions: vec![],
             constraints: vec![]
         }
     }
 
-    pub fn load(&mut self) -> Result<()> {
-        println!("Reading {}...", self.filename);
+    pub fn memory() -> Datalite<'static> {
+        let conn = Connection::open_in_memory().expect("Unable to initialize memory database");
 
-        let file = File::open(self.filename)?;
+        let mut instance = Datalite {
+            conn: conn,
+            subscriptions: vec![],
+            constraints: vec![]
+        };
 
-        let _lines = BufReader::new(file)
-            .lines()
-            .map(|line| {
-                line.expect("asd")
-            });
+        instance.boot().expect("Unable to boot memory database");
 
-        // lines.map(|line| {
-        //     serde_json::from_str(&line).expect("assf")
-        // }).for_each(|datom| {
-        //     self.facts.push(Box::new(datom));
-        // });
+        instance
+    }
+
+    pub fn boot(&mut self) -> Result<()> {
+        self.conn.execute(
+            "CREATE TABLE facts (
+                id      TEXT NOT NULL,
+                attr    TEXT NOT NULL,
+                value   TEXT NOT NULL,
+                fact    BOOLEAN,
+                tx      TEXT NOT NULL
+            )",
+            params![],
+        )?;
 
         Ok(())
     }
@@ -66,29 +78,27 @@ impl<'a> Datalite<'a> {
         let lexer = parser::lexer::Lexer::new(&query).inspect(|tok| eprintln!("tok: {:?}", tok));
         let program: parser::ast::Program = parser::parser::parse(lexer).unwrap();
 
-        executor::query(&self.facts, program.query)
+        executor::query(&self.conn, program.query)
     }
 
     pub fn fact(&mut self, id: &'a str, attr: &'a str, value: &'a str) -> Result<()> {
-        self.facts.push(Box::new(Datom {
-           id: id,
-           attr: attr,
-           value: value,
-           fact: true,
-           tx: "T1"
-        }));
+        let tx = "43223";
+
+        self.conn.execute(
+            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, attr, value, true, tx],
+        )?;
 
         Ok(())
     }
 
     pub fn unfact(&mut self, id: &'a str, attr: &'a str) -> Result<()> {
-        self.facts.push(Box::new(Datom {
-           id: id,
-           attr: attr,
-           value: "",
-           fact: false,
-           tx: "T1"
-        }));
+        let tx = "43223";
+
+        self.conn.execute(
+            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, attr, "", false, tx],
+        )?;
 
         Ok(())
     }
@@ -117,13 +127,12 @@ impl<'a> Datalite<'a> {
 
     pub fn transaction<F>(&mut self, f: F) -> Result<()>
     where F: Fn(&mut Transaction) {
-        let mut block = Transaction::new();
+        let tx = self.conn.transaction()?;
+        let mut block = Transaction::new(&tx);
 
         f(&mut block);
 
-        block.facts.into_iter().for_each(|fact| {
-            self.facts.push(fact);
-        });
+        tx.commit().expect("Unable to commit transaction");
 
         Ok(())
     }

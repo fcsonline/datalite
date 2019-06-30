@@ -1,36 +1,32 @@
-use crate::datom::Datom;
-
 pub struct Transaction<'a> {
-    pub facts: Vec<Box<Datom<'a>>>,
+    pub tx: &'a rusqlite::Transaction<'a>,
 }
 
 impl<'a> Transaction<'a> {
-    pub fn new () -> Transaction<'a> {
+    pub fn new (tx: &'a rusqlite::Transaction) -> Transaction<'a> {
         Transaction {
-            facts: vec![]
+            tx: tx
         }
     }
 
-    pub fn fact(&mut self, id: &'a str, attr: &'a str, value: &'a str) -> Result<(), &'a str> {
-        self.facts.push(Box::new(Datom {
-           id: id,
-           attr: attr,
-           value: value,
-           fact: true,
-           tx: "T1"
-        }));
+    pub fn fact(&mut self, id: &str, attr: &str, value: &str) -> Result<(), &'a str> {
+        let tx = "43223";
+
+        self.tx.execute(
+            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, attr, value, true, tx],
+        ).expect("transaction fact error");
 
         Ok(())
     }
 
-    pub fn unfact(&mut self, id: &'a str, attr: &'a str) -> Result<(), &'a str> {
-        self.facts.push(Box::new(Datom {
-           id: id,
-           attr: attr,
-           value: "",
-           fact: false,
-           tx: "T1"
-        }));
+    pub fn unfact(&mut self, id: &str, attr: &str) -> Result<(), &'a str> {
+        let tx = "43223";
+
+        self.tx.execute(
+            "INSERT INTO facts (id, attr, value, fact, tx) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, attr, "", false, tx],
+        ).expect("transaction unfact error");
 
         Ok(())
     }
